@@ -1,0 +1,82 @@
+# ─── IDE / local tooling ─────────────────────────────────────────────────────
+.idea/
+.vs/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.omc/
+CLAUDE.md
+.claude/
+.playwright/
+
+# ─── Local-only prompt/planning files ────────────────────────────────────────
+/docs/prompts/
+
+# ─── Environment variables ───────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# ─── OS ──────────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Java ────────────────────────────────────────────────────────────────────
+*.class
+*.jar
+!*-sources.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ─── Gradle ──────────────────────────────────────────────────────────────────
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ─── Maven ───────────────────────────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# ─── Spring Boot ─────────────────────────────────────────────────────────────
+application-local.yml
+application-local.yaml
+application-local.properties
+**/src/main/resources/application-local*
+
+# ─── Docker volumes / runtime data ───────────────────────────────────────────
+docker/data/
+volumes/
+data/
+
+# ─── Test coverage ───────────────────────────────────────────────────────────
+.jacoco/
+jacoco.exec

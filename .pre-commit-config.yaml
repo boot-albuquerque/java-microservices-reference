@@ -1,0 +1,115 @@
+# Java Microservices Reference - Pre-commit Hooks
+#
+# Install:
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit install --hook-type commit-msg
+#
+# Manual: pre-commit run --all-files
+
+repos:
+  # --------------------------------------------------------------------------
+  # Standard file checks
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: check-yaml
+        exclude: "^helm/"
+      - id: check-json
+
+  # --------------------------------------------------------------------------
+  # Markdown linting
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: [--config, .markdownlint.json]
+        exclude: "^(node_modules/)"
+
+  # --------------------------------------------------------------------------
+  # Java - Gradle compilation + quality
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: gradle-compile
+        name: "Java: compile check"
+        entry: |
+          bash -c "test -f gradlew && ./gradlew compileJava compileTestJava --no-daemon -q || true"
+        language: system
+        pass_filenames: false
+        files: "\\.java$"
+
+      - id: spotless-check
+        name: "Java: formatting (Spotless)"
+        entry: |
+          bash -c "test -f gradlew && ./gradlew spotlessCheck --no-daemon -q || true"
+        language: system
+        pass_filenames: false
+        files: "\\.java$"
+
+      - id: checkstyle
+        name: "Java: static analysis (Checkstyle)"
+        entry: |
+          bash -c "test -f gradlew && ./gradlew checkstyleMain --no-daemon -q || true"
+        language: system
+        pass_filenames: false
+        files: "\\.java$"
+
+  # --------------------------------------------------------------------------
+  # Hardcoded credentials guard
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: no-credentials
+        name: "Guard: no hardcoded secrets"
+        entry: |
+          bash -c '! git diff --cached -U0 | grep "^+" | grep -iE "(password|secret|api[._]key|token)\s*=\s*\"[^$]" | grep -vE "(test|example|placeholder)"'
+        language: system
+        pass_filenames: false
+
+  # --------------------------------------------------------------------------
+  # Conventional Commits (commit-msg stage)
+  # --------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: conventional-commits
+        name: "Git: conventional commits"
+        entry: |
+          bash -c '
+            MSG=$(head -1 "$1")
+            PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)\(.+\): .+"
+            if ! echo "$MSG" | grep -qE "$PATTERN"; then
+              echo "ERROR - Conventional Commits format required"
+              echo "  Format: <type>(<scope>): <subject>"
+              echo "  Got:    $MSG"
+              exit 1
+            fi
+          '
+        language: system
+        stages: [commit-msg]
+        always_run: true
+
+default_language_version:
+  python: python3
+
+fail_fast: false
+
+exclude: |
+  (?x)^(
+    \.git/.*|
+    \.gradle/.*|
+    build/.*|
+    node_modules/.*|
+    \.idea/.*|
+    \.vscode/.*
+  )$
