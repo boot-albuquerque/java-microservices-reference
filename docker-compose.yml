@@ -3,6 +3,7 @@ include:
 
 services:
   payment-service:
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     build:
       context: .
       dockerfile: payment-service/Dockerfile
@@ -20,7 +21,7 @@ services:
       OTEL_LOGS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: service.version=0.1.0,service.namespace=jmr
     ports:
-      - "8081:8081"
+      - "${PORT_PAYMENT:-18081}:8081"
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +44,7 @@ services:
       start_period: 30s
 
   notification-service:
+    platform: ${DOCKER_PLATFORM:-linux/arm64}
     build:
       context: .
       dockerfile: notification-service/Dockerfile
@@ -57,7 +59,7 @@ services:
       OTEL_LOGS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: service.version=0.1.0,service.namespace=jmr
     ports:
-      - "8082:8082"
+      - "${PORT_NOTIFICATION:-18082}:8082"
     depends_on:
       kafka:
         condition: service_healthy

@@ -1,0 +1,197 @@
+networks:
+  app-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-data:
+  redis-data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-payments}
+      POSTGRES_USER: ${POSTGRES_USER:-payments}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-payments}
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.20
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${PORT_REDIS:-16379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.21
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "${PORT_ZOOKEEPER:-12181}:2181"
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.23
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "${PORT_KAFKA:-19092}:9092"
+      - "${PORT_KAFKA_EXTERNAL:-29092}:29092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.22
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.1
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+    ports:
+      - "${PORT_SCHEMA_REGISTRY:-18085}:8081"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.24
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/subjects || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:4.0.1
+    platform: ${KAFDROP_PLATFORM:-linux/amd64}
+    environment:
+      KAFKA_BROKERCONNECT: kafka:9092
+      SCHEMAREGISTRY_CONNECT: http://schema-registry:8081
+    ports:
+      - "${PORT_KAFDROP:-19000}:9000"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.25
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "${PORT_PROMETHEUS:-19090}:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.30
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    ports:
+      - "${PORT_GRAFANA:-13000}:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.31
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.109.0
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+    ports:
+      - "${PORT_OTEL_GRPC:-14317}:4317"
+      - "${PORT_OTEL_HTTP:-14318}:4318"
+      - "${PORT_OTEL_METRICS:-18889}:8889"
+    volumes:
+      - ./observability/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    networks:
+      app-net:
+        ipv4_address: 172.20.0.32
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:13133/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
