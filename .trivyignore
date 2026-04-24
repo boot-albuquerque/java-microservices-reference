@@ -1,6 +1,28 @@
+# ------------------------------------------------------------------------------
+# Documented ignores for Trivy HIGH/CRITICAL scan.
+# Each entry explains WHY it cannot be fixed within the current Spring Boot
+# 3.3.x line and what upgrade path will remove it.
+# ------------------------------------------------------------------------------
+
 # CVE-2026-35554 — kafka-clients 3.7.1 information-disclosure (HIGH).
 # Fixed in 3.9.2+, but bumping kafka-clients breaks spring-kafka-test's
-# EmbeddedKafka (KafkaConfig.scala incompatibility with kafka-server 3.7.x
-# from the Spring Boot 3.3.5 BOM). Will be removed once the project upgrades
-# to Spring Boot 3.4+ which ships kafka-clients >= 3.9 end-to-end.
+# EmbeddedKafka (KafkaConfig.scala expects kafka-server 3.7.x APIs from the
+# Spring Boot 3.3.x BOM). Remove once project upgrades to Spring Boot 3.4+.
 CVE-2026-35554
+
+# CVE-2026-22732 — spring-security-web (CRITICAL, Spring Security 6.3.x).
+# Fixed in 6.5.9 / 7.0.4 only; the 6.3.x branch is EOL and will not receive a
+# patch. Requires upgrading to Spring Boot 3.5+ which ships Spring Security
+# 6.5.x. Remove alongside the Boot 3.5 upgrade.
+CVE-2026-22732
+
+# CVE-2025-41249 — spring-core (HIGH, Spring Framework 6.1.x).
+# Fixed in 6.2.11; Spring Boot 3.3.x stays on Spring Framework 6.1.x.
+# Requires upgrading to Spring Boot 3.4+ (ships Framework 6.2.x).
+CVE-2025-41249
+
+# CVE-2026-29129 — tomcat-embed-core (HIGH, cipher preference).
+# As of 2026-04 no fixed version is published upstream; Trivy marks the row
+# with no "Fixed Version". Will be removed once Apache Tomcat publishes a fix
+# and the Spring Boot BOM picks it up.
+CVE-2026-29129
