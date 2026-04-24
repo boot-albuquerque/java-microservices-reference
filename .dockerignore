@@ -1,0 +1,60 @@
+# Build outputs
+build/
+**/build/
+out/
+target/
+.gradle/
+**/.gradle/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.project
+.classpath
+.settings/
+
+# VCS
+.git/
+.gitignore
+.github/
+
+# Local dev / runtime
+*.log
+**/*.log
+hs_err_pid*.log
+replay_pid*.log
+**/replay_pid*.log
+
+# Docker / compose overlays
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# OMC / local state
+.omc/
+.claude/
+
+# Docs (not needed at runtime)
+docs/
+README.md
+ARCHITECTURE.md
+CLAUDE.md
+
+# Helm charts (deployed separately, not from build context)
+charts/
+
+# Observability configs (mounted via compose volumes, not built in)
+observability/
+
+# Scripts (not needed in image)
+scripts/
+
+# Env files (secrets must never enter image)
+.env
+.env.local
+.env.*.local
+
+# Misc
+.DS_Store
+*.swp
+Thumbs.db
