@@ -1,0 +1,14 @@
+{
+  "namespace": "com.example.payment.avro",
+  "type": "record",
+  "name": "PaymentCreated",
+  "fields": [
+    {"name": "paymentId", "type": {"type": "string", "logicalType": "uuid"}},
+    {"name": "amount", "type": "string", "doc": "Monetary amount as string, e.g. 123.45"},
+    {"name": "currency", "type": "string", "doc": "ISO 4217 code"},
+    {"name": "payerId", "type": {"type": "string", "logicalType": "uuid"}},
+    {"name": "payeeId", "type": {"type": "string", "logicalType": "uuid"}},
+    {"name": "externalReference", "type": ["null", "string"], "default": null},
+    {"name": "timestamp", "type": {"type": "long", "logicalType": "timestamp-millis"}}
+  ]
+}

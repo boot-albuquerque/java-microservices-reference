@@ -13,12 +13,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.UUID;
 import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+  private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
   private final SecretKey signingKey;
 
@@ -39,20 +43,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     String token = authHeader.substring(7);
+
+    Claims claims;
     try {
-      Claims claims =
-          Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
-
-      String userIdStr = claims.get("userId", String.class);
-      UUID userId = UUID.fromString(userIdStr);
-
-      UsernamePasswordAuthenticationToken authentication =
-          new UsernamePasswordAuthenticationToken(
-              userId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-    } catch (JwtException | IllegalArgumentException e) {
+      claims = Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
+    } catch (JwtException e) {
+      log.warn("JWT validation failed: {}", e.getMessage());
       SecurityContextHolder.clearContext();
+      filterChain.doFilter(request, response);
+      return;
     }
+
+    UUID userId;
+    try {
+      userId = UUID.fromString(claims.get("userId", String.class));
+    } catch (IllegalArgumentException | NullPointerException e) {
+      log.warn("JWT 'userId' claim missing or not a valid UUID: {}", e.getMessage());
+      SecurityContextHolder.clearContext();
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+    UsernamePasswordAuthenticationToken authentication =
+        new UsernamePasswordAuthenticationToken(
+            userId, null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
+    SecurityContextHolder.getContext().setAuthentication(authentication);
 
     filterChain.doFilter(request, response);
   }
