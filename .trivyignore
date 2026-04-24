@@ -26,3 +26,9 @@ CVE-2025-41249
 # with no "Fixed Version". Will be removed once Apache Tomcat publishes a fix
 # and the Spring Boot BOM picks it up.
 CVE-2026-29129
+
+# CVE-2025-12183 — lz4-java 1.8.0 out-of-bounds (HIGH).
+# Fix version 1.8.1 advertised by the advisory but not yet published on
+# Maven Central under org.lz4:lz4-java (latest available GA is 1.8.0).
+# Pulled transitively via kafka-clients. Remove once 1.8.1 is released.
+CVE-2025-12183
