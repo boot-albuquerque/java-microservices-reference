@@ -31,11 +31,15 @@ subprojects {
     ext['tomcat.version'] = '10.1.54'
     ext['netty.version'] = '4.1.118.Final'
     ext['postgresql.version'] = '42.7.7'
-    ext['lz4-java.version'] = '1.8.1'
 
     dependencyManagement {
         imports {
             mavenBom 'org.springframework.boot:spring-boot-dependencies:3.3.13'
+        }
+        // lz4-java is not managed by the Boot BOM (pulled transitively via
+        // kafka-clients). Force 1.8.1 to close CVE-2025-12183.
+        dependencies {
+            dependency 'org.lz4:lz4-java:1.8.1'
         }
     }
 
