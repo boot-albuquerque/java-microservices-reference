@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon
+
+      - name: Run integration tests
+        run: ./gradlew integrationTest --no-daemon
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/"
+
+  build:
+    name: Build JARs
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build
+        run: ./gradlew bootJar --no-daemon
+
+      - name: Upload payment JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-jar
+          path: payment-service/build/libs/*.jar
+
+      - name: Upload notification JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: notification-jar
+          path: notification-service/build/libs/*.jar
+
+  security:
+    name: Security Scan (Trivy)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build payment image for scan
+        run: docker build -f payment-service/Dockerfile -t payment-scan:${{ github.sha }} .
+
+      - name: Scan payment image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: payment-scan:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Build notification image for scan
+        run: docker build -f notification-service/Dockerfile -t notification-scan:${{ github.sha }} .
+
+      - name: Scan notification image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: notification-scan:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+  publish:
+    name: Publish Images (GHCR)
+    runs-on: ubuntu-latest
+    needs: security
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push payment-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: payment-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/payment-service:latest
+            ${{ env.IMAGE_PREFIX }}/payment-service:${{ github.sha }}
+
+      - name: Build and push notification-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: notification-service/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/notification-service:latest
+            ${{ env.IMAGE_PREFIX }}/notification-service:${{ github.sha }}
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.16.0"
+
+      - name: Lint charts
+        run: helm lint charts/payment-service charts/notification-service
