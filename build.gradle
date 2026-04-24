@@ -30,11 +30,16 @@ subprojects {
     // CVE remediation: pin patched versions while staying on Spring Boot 3.3.5
     ext['tomcat.version'] = '10.1.52'
     ext['netty.version'] = '4.1.118.Final'
-    ext['kafka.version'] = '3.9.2'
 
     dependencyManagement {
         imports {
             mavenBom 'org.springframework.boot:spring-boot-dependencies:3.3.5'
+        }
+        // Override only kafka-clients (runtime CVE fix) without touching
+        // kafka.version — spring-kafka-test's EmbeddedKafkaZKBroker is tightly
+        // coupled to kafka-server 3.7.x APIs and breaks if the broker is bumped.
+        dependencies {
+            dependency 'org.apache.kafka:kafka-clients:3.9.2'
         }
     }
 
