@@ -1,0 +1,6 @@
+# CVE-2026-35554 — kafka-clients 3.7.1 information-disclosure (HIGH).
+# Fixed in 3.9.2+, but bumping kafka-clients breaks spring-kafka-test's
+# EmbeddedKafka (KafkaConfig.scala incompatibility with kafka-server 3.7.x
+# from the Spring Boot 3.3.5 BOM). Will be removed once the project upgrades
+# to Spring Boot 3.4+ which ships kafka-clients >= 3.9 end-to-end.
+CVE-2026-35554
