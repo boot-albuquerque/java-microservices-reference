@@ -14,10 +14,19 @@
         "name": "service",
         "type": "custom",
         "label": "Service",
-        "current": { "value": "payment-service", "text": "payment-service" },
+        "current": {
+          "value": "payment-service",
+          "text": "payment-service"
+        },
         "options": [
-          { "value": "payment-service", "text": "payment-service" },
-          { "value": "notification-service", "text": "notification-service" }
+          {
+            "value": "payment-service",
+            "text": "payment-service"
+          },
+          {
+            "value": "notification-service",
+            "text": "notification-service"
+          }
         ]
       }
     ]
@@ -27,11 +36,22 @@
       "id": 1,
       "title": "Payments Created (total)",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
-          "expr": "payments_created_total",
+          "expr": "payments_total",
           "legendFormat": "created"
         }
       ]
@@ -40,11 +60,22 @@
       "id": 2,
       "title": "Payments Processed (by status)",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
-          "expr": "payments_processed_total",
+          "expr": "payments_total",
           "legendFormat": "{{status}}"
         }
       ]
@@ -53,8 +84,19 @@
       "id": 3,
       "title": "Notifications Received (total)",
       "type": "stat",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
       "targets": [
         {
           "expr": "notifications_received_total",
@@ -66,21 +108,28 @@
       "id": 4,
       "title": "HTTP Latency p50/p95/p99",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "fieldConfig": {
-        "defaults": { "unit": "s" }
+        "defaults": {
+          "unit": "s"
+        }
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{job=\"payment-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"payment-service\"}[5m])) by (le))",
           "legendFormat": "p50"
         },
         {
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"payment-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"payment-service\"}[5m])) by (le))",
           "legendFormat": "p95"
         },
         {
-          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{job=\"payment-service\"}[5m])) by (le))",
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"payment-service\"}[5m])) by (le))",
           "legendFormat": "p99"
         }
       ]
@@ -89,10 +138,15 @@
       "id": 5,
       "title": "Kafka Consumer Lag",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
       "targets": [
         {
-          "expr": "kafka_consumer_fetch_manager_records_lag_max{job=\"notification-service\"}",
+          "expr": "kafka_consumer_fetch_manager_records_lag_max{application=\"notification-service\"}",
           "legendFormat": "{{topic}} {{partition}}"
         }
       ]
@@ -101,17 +155,24 @@
       "id": 6,
       "title": "JVM Heap Used",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "fieldConfig": {
-        "defaults": { "unit": "bytes" }
+        "defaults": {
+          "unit": "bytes"
+        }
       },
       "targets": [
         {
-          "expr": "jvm_memory_used_bytes{area=\"heap\",job=\"payment-service\"}",
+          "expr": "jvm_memory_used_bytes{area=\"heap\",application=\"payment-service\"}",
           "legendFormat": "heap used"
         },
         {
-          "expr": "jvm_memory_used_bytes{area=\"heap\",job=\"notification-service\"}",
+          "expr": "jvm_memory_used_bytes{area=\"heap\",application=\"notification-service\"}",
           "legendFormat": "notification heap used"
         }
       ]
@@ -120,22 +181,35 @@
       "id": 7,
       "title": "Process CPU Usage",
       "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "fieldConfig": {
-        "defaults": { "unit": "percentunit", "max": 1 }
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1
+        }
       },
       "targets": [
         {
-          "expr": "process_cpu_usage{job=\"payment-service\"}",
+          "expr": "process_cpu_usage{application=\"payment-service\"}",
           "legendFormat": "payment-service"
         },
         {
-          "expr": "process_cpu_usage{job=\"notification-service\"}",
+          "expr": "process_cpu_usage{application=\"notification-service\"}",
           "legendFormat": "notification-service"
         }
       ]
     }
   ],
-  "annotations": { "list": [] },
-  "tags": ["payment-service", "observability"]
+  "annotations": {
+    "list": []
+  },
+  "tags": [
+    "payment-service",
+    "observability"
+  ]
 }
