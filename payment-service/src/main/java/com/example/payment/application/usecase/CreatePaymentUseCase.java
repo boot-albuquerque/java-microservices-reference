@@ -46,9 +46,35 @@ public class CreatePaymentUseCase {
       return new CreatePaymentResult(existing, true);
     }
 
+    UUID paymentId = UUID.randomUUID();
+
+    // Atomically claim the idempotency key before touching DB — prevents duplicate rows
+    boolean stored = idempotencyStore.storeIfAbsent(idempotencyKey, paymentId);
+    if (!stored) {
+      UUID winnerId =
+          idempotencyStore
+              .find(idempotencyKey)
+              .orElseThrow(() -> new IdempotencyConflictException(idempotencyKey));
+      // Winner thread may not have persisted yet; retry briefly
+      PaymentResponse winner = null;
+      for (int attempt = 0; attempt < 10 && winner == null; attempt++) {
+        winner = repository.findById(winnerId).map(PaymentResponse::from).orElse(null);
+        if (winner == null) {
+          try {
+            Thread.sleep(50);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            break;
+          }
+        }
+      }
+      if (winner == null) throw new IdempotencyConflictException(idempotencyKey);
+      return new CreatePaymentResult(winner, true);
+    }
+
     Payment payment =
         Payment.createPending(
-            UUID.randomUUID(),
+            paymentId,
             request.amount(),
             request.currency(),
             idempotencyKey,
@@ -58,7 +84,6 @@ public class CreatePaymentUseCase {
             clock.instant());
 
     repository.save(payment);
-    idempotencyStore.store(idempotencyKey, payment.id());
     eventPublisher.publishCreated(payment.toCreatedEvent());
     metrics.recordPaymentCreated();
 

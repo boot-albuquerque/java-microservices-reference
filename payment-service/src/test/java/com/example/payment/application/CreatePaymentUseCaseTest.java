@@ -55,6 +55,7 @@ class CreatePaymentUseCaseTest {
   @Test
   void shouldCreatePaymentWhenNotIdempotent() {
     when(idempotencyStore.find(IDEMPOTENCY_KEY)).thenReturn(Optional.empty());
+    when(idempotencyStore.storeIfAbsent(eq(IDEMPOTENCY_KEY), any(UUID.class))).thenReturn(true);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     CreatePaymentRequest request =
@@ -66,7 +67,7 @@ class CreatePaymentUseCaseTest {
     assertThat(result.wasIdempotent()).isFalse();
     assertThat(result.response().status()).isEqualTo("PENDING");
     verify(repository).save(any(Payment.class));
-    verify(idempotencyStore).store(eq(IDEMPOTENCY_KEY), any(UUID.class));
+    verify(idempotencyStore).storeIfAbsent(eq(IDEMPOTENCY_KEY), any(UUID.class));
     verify(eventPublisher).publishCreated(any());
     verify(metrics).recordPaymentCreated();
   }
@@ -119,6 +120,7 @@ class CreatePaymentUseCaseTest {
     UUID payerId = UUID.randomUUID();
     UUID payeeId = UUID.randomUUID();
     when(idempotencyStore.find(IDEMPOTENCY_KEY)).thenReturn(Optional.empty());
+    when(idempotencyStore.storeIfAbsent(eq(IDEMPOTENCY_KEY), any(UUID.class))).thenReturn(true);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     CreatePaymentRequest request =
