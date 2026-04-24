@@ -30,7 +30,7 @@ replay_pid*.log
 docker-compose.override.yml
 docker-compose.*.local.yml
 
-# OMC / local state
+# Local tooling state
 .omc/
 .claude/
 

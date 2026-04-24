@@ -221,7 +221,7 @@ Decisoes arquiteturais documentadas em [`docs/adr/`](docs/adr/):
 | [ADR-006](docs/adr/0006-clean-architecture-domain-isolation.md) | Clean Architecture + Domain Isolation |
 
 ### Acceptance Criteria
-[`docs/acceptance-criteria-checklist.md`](docs/acceptance-criteria-checklist.md) — 29 criterios mapeados do deep-interview spec com evidencia (arquivo/teste/comando).
+[`docs/acceptance-criteria-checklist.md`](docs/acceptance-criteria-checklist.md) — 29 criterios mapeados dos requisitos do projeto com evidencia (arquivo/teste/comando).
 
 ---
 
