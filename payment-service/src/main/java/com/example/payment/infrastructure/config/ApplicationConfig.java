@@ -1,5 +1,6 @@
 package com.example.payment.infrastructure.config;
 
+import com.example.payment.application.port.MetricsRecorder;
 import com.example.payment.application.usecase.CreatePaymentUseCase;
 import com.example.payment.application.usecase.GetPaymentUseCase;
 import com.example.payment.application.usecase.ProcessPaymentUseCase;
@@ -26,14 +27,18 @@ public class ApplicationConfig {
       PaymentRepository repository,
       EventPublisher eventPublisher,
       IdempotencyStore idempotencyStore,
-      Clock clock) {
-    return new CreatePaymentUseCase(repository, eventPublisher, idempotencyStore, clock);
+      Clock clock,
+      MetricsRecorder metrics) {
+    return new CreatePaymentUseCase(repository, eventPublisher, idempotencyStore, clock, metrics);
   }
 
   @Bean
   public ProcessPaymentUseCase processPaymentUseCase(
-      PaymentRepository repository, EventPublisher eventPublisher, Clock clock) {
-    return new ProcessPaymentUseCase(repository, eventPublisher, clock);
+      PaymentRepository repository,
+      EventPublisher eventPublisher,
+      Clock clock,
+      MetricsRecorder metrics) {
+    return new ProcessPaymentUseCase(repository, eventPublisher, clock, metrics);
   }
 
   @Bean

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.example.payment.application.dto.CreatePaymentRequest;
 import com.example.payment.application.dto.CreatePaymentResult;
 import com.example.payment.application.exception.IdempotencyConflictException;
+import com.example.payment.application.port.MetricsRecorder;
 import com.example.payment.application.usecase.CreatePaymentUseCase;
 import com.example.payment.domain.model.Payment;
 import com.example.payment.domain.model.PaymentStatus;
@@ -35,6 +36,7 @@ class CreatePaymentUseCaseTest {
   @Mock private PaymentRepository repository;
   @Mock private EventPublisher eventPublisher;
   @Mock private IdempotencyStore idempotencyStore;
+  @Mock private MetricsRecorder metrics;
 
   private Clock clock;
   private CreatePaymentUseCase useCase;
@@ -46,7 +48,8 @@ class CreatePaymentUseCaseTest {
   @BeforeEach
   void setUp() {
     clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    useCase = new CreatePaymentUseCase(repository, eventPublisher, idempotencyStore, clock);
+    useCase =
+        new CreatePaymentUseCase(repository, eventPublisher, idempotencyStore, clock, metrics);
   }
 
   @Test
@@ -65,6 +68,7 @@ class CreatePaymentUseCaseTest {
     verify(repository).save(any(Payment.class));
     verify(idempotencyStore).store(eq(IDEMPOTENCY_KEY), any(UUID.class));
     verify(eventPublisher).publishCreated(any());
+    verify(metrics).recordPaymentCreated();
   }
 
   @Test

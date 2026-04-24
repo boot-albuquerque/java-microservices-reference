@@ -4,6 +4,7 @@ import com.example.payment.application.dto.CreatePaymentRequest;
 import com.example.payment.application.dto.CreatePaymentResult;
 import com.example.payment.application.dto.PaymentResponse;
 import com.example.payment.application.exception.IdempotencyConflictException;
+import com.example.payment.application.port.MetricsRecorder;
 import com.example.payment.domain.model.Payment;
 import com.example.payment.domain.port.EventPublisher;
 import com.example.payment.domain.port.IdempotencyStore;
@@ -18,16 +19,19 @@ public class CreatePaymentUseCase {
   private final EventPublisher eventPublisher;
   private final IdempotencyStore idempotencyStore;
   private final Clock clock;
+  private final MetricsRecorder metrics;
 
   public CreatePaymentUseCase(
       PaymentRepository repository,
       EventPublisher eventPublisher,
       IdempotencyStore idempotencyStore,
-      Clock clock) {
+      Clock clock,
+      MetricsRecorder metrics) {
     this.repository = repository;
     this.eventPublisher = eventPublisher;
     this.idempotencyStore = idempotencyStore;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   public CreatePaymentResult execute(
@@ -56,6 +60,7 @@ public class CreatePaymentUseCase {
     repository.save(payment);
     idempotencyStore.store(idempotencyKey, payment.id());
     eventPublisher.publishCreated(payment.toCreatedEvent());
+    metrics.recordPaymentCreated();
 
     return new CreatePaymentResult(PaymentResponse.from(payment), false);
   }
